@@ -11,13 +11,14 @@ import threading
 import cv2
 from flask import Flask, Response, jsonify, render_template, request
 
-from tryon import Camera, GarmentCatalog, GarmentOverlay, PoseDetector
+from tryon import ArmOccluder, Camera, GarmentCatalog, GarmentOverlay, PoseDetector
 
 app = Flask(__name__)
 
 camera = Camera(index=0)
 detector = PoseDetector()
 overlay = GarmentOverlay()
+occluder = ArmOccluder()
 catalog = GarmentCatalog()
 
 _state_lock = threading.Lock()
@@ -35,21 +36,23 @@ def _render_frame():
         return None
 
     frame = cv2.flip(frame, 1)  # mirror: behaves like a fitting-room mirror
+    clean = frame.copy()        # pristine copy for arm-occlusion restore
 
     with _state_lock:
         garment_name = _state["garment"]
         enabled = _state["enabled"]
         show_landmarks = _state["show_landmarks"]
 
-    keypoints = detector.detect(frame)
+    pose = detector.detect(frame)
 
-    if enabled and keypoints is not None and garment_name:
+    if enabled and pose is not None and garment_name:
         garment = catalog.get(garment_name)
         if garment is not None:
-            frame = overlay.apply(frame, garment, keypoints)
+            frame = overlay.apply(frame, garment, pose)
+            frame = occluder.apply(clean, frame, pose)
 
-    if show_landmarks and keypoints is not None:
-        for pt in keypoints.values():
+    if show_landmarks and pose is not None:
+        for pt in pose.points.values():
             cv2.circle(frame, tuple(pt.astype(int)), 5, (0, 255, 160), -1)
 
     return frame

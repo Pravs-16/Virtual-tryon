@@ -77,7 +77,11 @@ def _shade(base_rgb: tuple[int, int, int], mask: Image.Image) -> Image.Image:
     highlight = 1.0 + 0.18 * np.exp(-(((xx - W / 2) / 260) ** 2 + ((yy - 260) / 300) ** 2))
     rng = np.random.default_rng(7)
     weave = 1.0 + rng.normal(0.0, 0.015, size=(H, W)).astype(np.float32)
-    shading = np.clip(vertical * highlight * weave, 0.0, 1.35)
+    # Soft vertical fold streaks that wander a little, like hanging cloth.
+    folds = 1.0 + 0.055 * np.sin(
+        xx / W * 9.0 * np.pi + 2.2 * np.sin(yy / H * 3.0 * np.pi)
+    ).astype(np.float32)
+    shading = np.clip(vertical * highlight * weave * folds, 0.0, 1.35)
 
     rgb = np.zeros((H, W, 3), dtype=np.float32)
     for c in range(3):
