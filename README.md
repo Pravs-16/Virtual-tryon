@@ -21,6 +21,8 @@ Browser <── MJPEG stream <── JPEG encode <── alpha blend <───�
 
 ## Quick start
 
+**Prerequisites:** Python 3.10+ and a webcam (the camera is read server-side by OpenCV, so run the app on the machine the camera is attached to).
+
 ```bash
 git clone https://github.com/Pravs-16/virtual-tryon.git
 cd virtual-tryon
